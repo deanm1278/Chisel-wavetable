@@ -70,6 +70,17 @@ class Hello extends Module {
 			regs(k).io.en := (decoder.io.addr === k.U && decoder.io.wclk)
 		}
 
+		//make wavetables
+		val wt0 = Module(new Wavetable)
+		wt0.io.En := 1.U
+		wt0.io.freq := regs(3).io.dout
+		wt0.io.step := 1.U
+
+		val bram0 = Module(new RamArb)
+		bram0.io.RBANK := wt0.io.RBANK
+		bram0.io.RADDR := wt0.io.RADDR
+		bram0.io.RCLK := wt0.io.RCLK
+
 		//create the PWMs
 		val pwms = Range(0, 4).map(_ => Module(new PWM(12)))
 		for (k <- 0 until 4) {
