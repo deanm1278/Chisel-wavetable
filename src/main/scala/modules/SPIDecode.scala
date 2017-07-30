@@ -18,3 +18,20 @@ class SPIDecode extends Module {
 
 	io.wclk := RegNext(io.dataIn(31) && io.trigger)
 }
+
+class SPIDecodeWave(val w: Int, val dummyCycles: Int) extends Module {
+	val io = IO(new Bundle {
+		val WBANK = Output(UInt(2.W))
+		val WADDR = Output(UInt(8.W))
+		val trigger = Input(Bool())	
+	})
+
+	val dummyCounter = Module(new Counter(w))
+    dummyCounter.io.inc := io.trigger
+    dummyCounter.io.amt := 1.U
+
+    val byteCount = dummyCounter.io.tot - dummyCycles.U
+
+	io.WBANK := byteCount(9, 8)
+	io.WADDR := byteCount(7, 0)
+}

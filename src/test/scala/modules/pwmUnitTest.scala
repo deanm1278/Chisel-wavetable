@@ -16,7 +16,7 @@ class PWMUnitTester(c: PWM) extends PeekPokeTester(c) {
     val period: BigInt = BigInt(r.nextInt % (1 << c.w)).abs
     val duty: BigInt  = BigInt(r.nextInt % period.toInt).abs
 
-    val out = enable & (x > duty)
+    val out = enable & (x <= duty)
 
     poke(c.io.en, enable)
     poke(c.io.per, period)

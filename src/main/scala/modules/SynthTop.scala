@@ -7,9 +7,9 @@ import chisel3.experimental._ // To enable experimental features
 class SB_PLL40_CORE extends BlackBox(Map("FEEDBACK_PATH" -> "SIMPLE",
 	"PLLOUT_SELECT" -> "GENCLK",
 	"DIVR" -> 0,
-	"DIVF" -> 79,
-	"DIVQ" -> 3,
-	"FILTER_RANGE" -> 1)) {
+	"DIVF" -> 23,
+	"DIVQ" -> 2,
+	"FILTER_RANGE" -> 2)) {
 
 	val io = IO(new Bundle {
 		val LOCK = Output(Bool())
@@ -20,14 +20,14 @@ class SB_PLL40_CORE extends BlackBox(Map("FEEDBACK_PATH" -> "SIMPLE",
 	})
 }
 
-class DReg(val w: Int) extends Module {
+class DReg extends Module {
   val io = IO(new Bundle {
     val en = Input(Bool())
-    val din = Input(UInt(w.W))
-    val dout = Output(UInt(w.W))
+    val din = Input(UInt(16.W))
+    val dout = Output(UInt(16.W))
   })
 
-  val x = RegInit(0.U(w.W))
+  val x = RegInit(0.U(16.W))
   when(io.en) { x := io.din }
 
   io.dout := x
@@ -35,14 +35,20 @@ class DReg(val w: Int) extends Module {
 
 class Hello extends Module {
 	val io = IO(new Bundle {
-		val led0 = Output(Bool())
-		val led1 = Output(Bool())
-		val led2 = Output(Bool())
+		val PWM_OUT = Output(Vec(5, Bool()))
 
 		val MOSI = Input(Bool())
 		val MISO = Output(Bool())
 		val SCK  = Input(Bool())
 		val SSEL = Input(Bool())
+
+		val WAVE_MOSI = Input(Bool())
+		val WAVE_SCK  = Input(Bool())
+		val WAVE_SSEL = Input(Bool())
+
+		val OSC0	= Output(UInt(16.W))
+		val OSC1	= Output(UInt(16.W))
+		val OSC2	= Output(UInt(16.W))
 	})
 
 	//instantiate the PLL. We need to explicitly define the clock and reset
@@ -51,7 +57,6 @@ class Hello extends Module {
 	pll.io.REFERENCECLK := this.clock
 
 	withClock(pll.io.PLLOUTCORE){
-
 		//create the SPI interface
 		val spi = Module(new SPISlave(32))
 		spi.io.MOSI := io.MOSI
@@ -59,43 +64,61 @@ class Hello extends Module {
 		spi.io.SCK := io.SCK
 		spi.io.SSEL := io.SSEL
 
+		//SPI command decoder
 		val decoder = Module(new SPIDecode)
 		decoder.io.dataIn := spi.io.DATA
 		decoder.io.trigger := spi.io.DATA_READY
 
 		//create the register map
-		val regs = Range(0, 4).map(_ => Module(new DReg(16)))
-		for (k <- 0 until 4) {
-			regs(k).io.din := decoder.io.dataOut
-			regs(k).io.en := (decoder.io.addr === k.U && decoder.io.wclk)
+		val regs = Vec(Seq.fill(20){ Module(new DReg()).io })
+		for (k <- 0 until 19) {
+			regs(k).din := decoder.io.dataOut
+			regs(k).en := (decoder.io.addr === k.U && decoder.io.wclk)
 		}
+		spi.io.READ_OUT := regs(decoder.io.addr).dout
+
+		//create the wave spi interface
+		val spiWave = Module(new SPIWave(16))
+		spiWave.io.MOSI := io.WAVE_MOSI
+		spiWave.io.SCK := io.WAVE_SCK
+		spiWave.io.SSEL := io.WAVE_SSEL
+		spiWave.io.EN := regs(9).dout(7)
+
+		val waveDecode = Module(new SPIDecodeWave(1028, 4))
+		waveDecode.io.trigger := spiWave.io.DATA_READY
 
 		//make wavetables
-		val wt0 = Module(new Wavetable)
-		wt0.io.En := 1.U
-		wt0.io.freq := regs(3).io.dout
-		wt0.io.step := 1.U
+		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
+		for (k <- 0 until 2) {
+			wavetables(k).io.En := regs(9).dout(8) //Key pressed
+			wavetables(k).io.freq := regs(k).dout(15, 3)
+			wavetables(k).io.step := regs(k).dout(2, 0)
+		}
 
-		val bram0 = Module(new RamArb)
-		bram0.io.RBANK := wt0.io.RBANK
-		bram0.io.RADDR := wt0.io.RADDR
-		bram0.io.RCLK := wt0.io.RCLK
+		val brams = Range(0, 3).map(_ => Module(new RamArb()))
+		for (k <- 0 until 2) {
+			brams(k).io.RBANK := wavetables(k).io.RBANK
+			brams(k).io.RADDR := wavetables(k).io.RADDR
+			brams(k).io.RCLK := wavetables(k).io.RCLK
+			brams(k).io.WBANK := waveDecode.io.WBANK
+			brams(k).io.WADDR := waveDecode.io.WADDR
+			brams(k).io.WCLK := spiWave.io.DATA_READY
+			brams(k).io.WE := regs(9).dout(4 + k) //write enable bits
+		}
+
+		//TODO: these need to go through volume modules
+		io.OSC0 := brams(0).io.RDATA
+		io.OSC1 := brams(1).io.RDATA
+		io.OSC2 := brams(2).io.RDATA
 
 		//create the PWMs
-		val pwms = Range(0, 4).map(_ => Module(new PWM(12)))
+		val pwms = Range(0, 5).map(_ => Module(new PWM(12)))
 		for (k <- 0 until 4) {
 			pwms(k).io.per := 4095.U
 			pwms(k).io.en := 1.U
+			pwms(k).io.dc := regs(k + 3).dout
+			io.PWM_OUT(k) := pwms(k).io.out
 		}
-		pwms(0).io.dc := regs(1).io.dout
-		pwms(1).io.dc := regs(2).io.dout
-
-		//set the pwm output pins
-		io.led1 := pwms(0).io.out
-		io.led2 := pwms(1).io.out
-
-		//turn one LED on
-		io.led0 := 1.U
 	}
 }
 

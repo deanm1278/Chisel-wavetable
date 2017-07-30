@@ -1,0 +1,86 @@
+# wavetable synth pcf
+
+# Config pins
+#set_io CDONE 65
+#set_io CRESET_B 66
+
+# Clock
+set_io clock 21   # 25 MHz clock
+set_io reset 107
+
+# SPI
+set_io io_SCK 102
+set_io io_MOSI 101
+set_io io_SSEL 106
+set_io io_MISO 104
+
+set_io io_WAVE_SCK 70
+set_io io_WAVE_MOSI 68
+set_io io_WAVE_SSEL 71
+
+# Subs
+##set_io SUB_OUT[0] 125
+##set_io SUB_OUT[1] 130
+##set_io SUB_OUT[2] 134
+
+# Noise
+##set_io NOISE_OUT 135
+
+# PWM
+set_io io_PWM_OUT_0 12
+set_io io_PWM_OUT_1 15 
+set_io io_PWM_OUT_2 19
+set_io io_PWM_OUT_3 17
+set_io io_PWM_OUT_4 23
+
+# DACs
+set_io io_OSC0[0] 1
+set_io io_OSC0[1] 2
+set_io io_OSC0[2] 3
+set_io io_OSC0[3] 4
+set_io io_OSC0[4] 7
+set_io io_OSC0[5] 8
+set_io io_OSC0[6] 9
+set_io io_OSC0[7] 10
+set_io io_OSC0[8] 25
+set_io io_OSC0[9] 26
+set_io io_OSC0[10] 28
+set_io io_OSC0[11] 29
+set_io io_OSC0[12] 31
+set_io io_OSC0[13] 32
+set_io io_OSC0[14] 33
+set_io io_OSC0[15] 34
+
+set_io io_OSC1[0] 110
+set_io io_OSC1[1] 112
+set_io io_OSC1[2] 113
+set_io io_OSC1[3] 114
+set_io io_OSC1[4] 115
+set_io io_OSC1[5] 116
+set_io io_OSC1[6] 117
+set_io io_OSC1[7] 118
+set_io io_OSC1[8] 136
+set_io io_OSC1[9] 137
+set_io io_OSC1[10] 138
+set_io io_OSC1[11] 139
+set_io io_OSC1[12] 141
+set_io io_OSC1[13] 142
+set_io io_OSC1[14] 143
+set_io io_OSC1[15] 144
+
+set_io io_OSC2[0] 63
+set_io io_OSC2[1] 62
+set_io io_OSC2[2] 61
+set_io io_OSC2[3] 60
+set_io io_OSC2[4] 56
+set_io io_OSC2[5] 55
+set_io io_OSC2[6] 48
+set_io io_OSC2[7] 47
+set_io io_OSC2[8] 45
+set_io io_OSC2[9] 44
+set_io io_OSC2[10] 43
+set_io io_OSC2[11] 42
+set_io io_OSC2[12] 41
+set_io io_OSC2[13] 39
+set_io io_OSC2[14] 38
+set_io io_OSC2[15] 37

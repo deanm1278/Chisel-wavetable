@@ -2,6 +2,7 @@ package modules
 
 import chisel3._
 import chisel3.experimental._ // To enable experimental features
+import chisel3.util._ // To enable experimental features
 
 class SB_RAM40_4K extends BlackBox(Map("READ_MODE" -> 0,
 	"WRITE_MODE" -> 0)) {
@@ -37,21 +38,23 @@ class RamArb extends Module {
 		val WADDR = Input(UInt(8.W))
 		val WCLK = Input(Bool())
 		val WBANK = Input(UInt(2.W))
+		val WE = Input(Bool())
 	})
 
 	//create the register map
-	val banks = Range(0, 3).map(_ => Module(new SB_RAM40_4K))
+	//val banks = Range(0, 4).map(_ => Module(new SB_RAM40_4K))
+	val banks = Vec(Seq.fill(4){ Module(new SB_RAM40_4K()).io })
 	for (k <- 0 until 3) {
-		//banks(k).io.RDATA := io.RDATA
-		banks(k).io.RADDR := io.RADDR
-		banks(k).io.RCLK := io.RCLK
-		banks(k).io.RCLKE := Bool(true)
-		banks(k).io.RE := (io.RBANK === k.U)
-		banks(k).io.WDATA := io.WDATA
-		banks(k).io.WADDR := io.WADDR
-		banks(k).io.WCLK := io.WCLK
-		banks(k).io.WCLKE := Bool(true)
-		banks(k).io.WE := (io.WBANK === k.U)
-		banks(k).io.MASK := UInt(0x0000)
+		banks(k).RADDR := io.RADDR
+		banks(k).RCLK := io.RCLK
+		banks(k).RCLKE := true.B
+		banks(k).RE := (io.RBANK === k.U)
+		banks(k).WDATA := io.WDATA
+		banks(k).WADDR := io.WADDR
+		banks(k).WCLK := io.WCLK
+		banks(k).WCLKE := true.B
+		banks(k).WE := (io.WBANK === k.U && io.WE)
+		banks(k).MASK := 0x0000.U
 	}
+	io.RDATA := banks(io.RBANK).RDATA
 } 

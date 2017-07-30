@@ -14,5 +14,5 @@ class PWM(val w: Int) extends Module {
   cnt := cnt + 1.U
 
   when (cnt >= io.per) { cnt := 0.U }
-  io.out := io.en && (cnt > io.dc)
+  io.out := io.en && (cnt <= io.dc)
 }

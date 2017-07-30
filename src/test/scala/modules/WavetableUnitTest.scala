@@ -16,7 +16,7 @@ class WavetableUnitTester(c: Wavetable) extends PeekPokeTester(c) {
 
     for(k <- 0 until (freq * 1023) ){
 	    step(1)
-	}
+	  }
   }
 }
 
