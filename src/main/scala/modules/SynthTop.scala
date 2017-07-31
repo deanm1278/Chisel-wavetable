@@ -71,7 +71,7 @@ class Hello extends Module {
 
 		//create the register map
 		val regs = Vec(Seq.fill(20){ Module(new DReg()).io })
-		for (k <- 0 until 19) {
+		for (k <- 0 until 20) {
 			regs(k).din := decoder.io.dataOut
 			regs(k).en := (decoder.io.addr === k.U && decoder.io.wclk)
 		}
@@ -89,31 +89,38 @@ class Hello extends Module {
 
 		//make wavetables
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
-		for (k <- 0 until 2) {
+		for (k <- 0 until 3) {
 			wavetables(k).io.En := regs(9).dout(8) //Key pressed
 			wavetables(k).io.freq := regs(k).dout(15, 3)
 			wavetables(k).io.step := regs(k).dout(2, 0)
 		}
 
 		val brams = Range(0, 3).map(_ => Module(new RamArb()))
-		for (k <- 0 until 2) {
+		for (k <- 0 until 3) {
 			brams(k).io.RBANK := wavetables(k).io.RBANK
 			brams(k).io.RADDR := wavetables(k).io.RADDR
 			brams(k).io.RCLK := wavetables(k).io.RCLK
 			brams(k).io.WBANK := waveDecode.io.WBANK
 			brams(k).io.WADDR := waveDecode.io.WADDR
+			brams(k).io.WDATA := spiWave.io.DATA
 			brams(k).io.WCLK := spiWave.io.DATA_READY
 			brams(k).io.WE := regs(9).dout(4 + k) //write enable bits
 		}
 
-		//TODO: these need to go through volume modules
-		io.OSC0 := brams(0).io.RDATA
-		io.OSC1 := brams(1).io.RDATA
-		io.OSC2 := brams(2).io.RDATA
+		//make volumes
+		val vols = Range(0, 3).map(_ => Module(new Volume()))
+		for (k <- 0 until 3) {
+			vols(k).io.IN := brams(k).io.RDATA
+			vols(k).io.MUL := regs(8).dout(2 + (3 * k), 0 + (3 * k))
+		}
+
+		io.OSC0 := vols(0).io.OUT
+		io.OSC1 := vols(1).io.OUT
+		io.OSC2 := vols(2).io.OUT
 
 		//create the PWMs
 		val pwms = Range(0, 5).map(_ => Module(new PWM(12)))
-		for (k <- 0 until 4) {
+		for (k <- 0 until 5) {
 			pwms(k).io.per := 4095.U
 			pwms(k).io.en := 1.U
 			pwms(k).io.dc := regs(k + 3).dout

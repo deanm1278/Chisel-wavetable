@@ -120,8 +120,8 @@ class SPIWave(val w: Int) extends Module {
     val byte_received = RegNext(bitcnt.io.tot === (w - 1).U && SCKr.io.rising)
 
     io.DATA_READY := byte_received
-  }
 
-  io.DATA := ShiftIn.shift(w, SCKr.io.rising && !SSELr.io.out, MOSI_DATA)
+    io.DATA := ShiftIn.shift(w, SCKr.io.rising, MOSI_DATA)
+  }
 
 }

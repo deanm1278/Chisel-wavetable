@@ -24,13 +24,13 @@ class Wavetable extends Module {
 		val step = Input(UInt(3.W))
 	})
 
-	withReset(io.En){
+	withReset(!io.En){
 		var periodTimer = Module(new Timer(16))
 		periodTimer.io.period := io.freq
 
 		val sampleCounter = Module(new Counter(1023))
 	    sampleCounter.io.inc := periodTimer.io.fire
-	    sampleCounter.io.amt := io.step
+	    sampleCounter.io.amt := (1.U << io.step)
 
 		io.RADDR := sampleCounter.io.tot(7, 0)
 		io.RBANK := sampleCounter.io.tot(9, 8)

@@ -1,6 +1,6 @@
 package modules.test
 
-/*
+
 import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 import modules.RamArb
 import org.scalatest.Matchers
@@ -9,6 +9,7 @@ class RamArbUnitTester(c: RamArb) extends PeekPokeTester(c) {
 
 	poke(c.io.WCLK, 0)
 	poke(c.io.RCLK, 0)
+	poke(c.io.WE, 1)
 
   def rd(bank: Int, addr: Int, data: Int) = {
     poke(c.io.RCLK, 1)
@@ -42,4 +43,3 @@ class RamArbTester extends ChiselFlatSpec with Matchers {
     }
   }
 }
-*/

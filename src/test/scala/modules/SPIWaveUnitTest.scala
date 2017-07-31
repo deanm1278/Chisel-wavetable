@@ -7,14 +7,15 @@ class SPIWaveTest(c: SPIWave) extends PeekPokeTester(c) {
   val r = Random
   poke(c.io.SSEL, 1)
   poke(c.io.SCK, 0)
-  poke(c.io.EN, 1)
 
   step(10)
 
   for(n <- 1 to 100) {
+    val en = r.nextBoolean()
     val dataIn = r.nextInt(1 << c.w);
 
     var mosi = dataIn
+    poke(c.io.EN, en)
 
     poke(c.io.SSEL, 0)
 
@@ -35,7 +36,8 @@ class SPIWaveTest(c: SPIWave) extends PeekPokeTester(c) {
 
     //spin
     step(5)
-    expect(c.io.DATA, dataIn)
+    if(en){ expect(c.io.DATA, dataIn) }
+    else { expect(c.io.DATA, 0) }
 
     poke(c.io.SSEL, 1)
     step(5)
