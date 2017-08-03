@@ -99,11 +99,10 @@ class Hello extends Module {
 		for (k <- 0 until 3) {
 			brams(k).io.RBANK := wavetables(k).io.RBANK
 			brams(k).io.RADDR := wavetables(k).io.RADDR
-			brams(k).io.RCLK := wavetables(k).io.RCLK
 			brams(k).io.WBANK := waveDecode.io.WBANK
 			brams(k).io.WADDR := waveDecode.io.WADDR
 			brams(k).io.WDATA := spiWave.io.DATA
-			brams(k).io.WCLK := spiWave.io.DATA_READY
+			brams(k).io.WCLKE := spiWave.io.DATA_READY
 			brams(k).io.WE := regs(9).dout(4 + k) //write enable bits
 		}
 

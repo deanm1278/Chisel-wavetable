@@ -54,11 +54,10 @@ class RamArb extends Module {
 	val io = IO(new Bundle {
 		val RDATA = Output(UInt(16.W))
 		val RADDR = Input(UInt(8.W))
-		val RCLK = Input(Bool())
 		val RBANK = Input(UInt(2.W))
 		val WDATA = Input(UInt(16.W))
 		val WADDR = Input(UInt(8.W))
-		val WCLK = Input(Bool())
+		val WCLKE = Input(Bool())
 		val WBANK = Input(UInt(2.W))
 		val WE = Input(Bool())
 	})
@@ -73,8 +72,8 @@ class RamArb extends Module {
 		banks(k).io.WDATA := io.WDATA
 		banks(k).io.WADDR := io.WADDR
 		banks(k).io.WCLK := this.clock
-		banks(k).io.WCLKE := (io.WBANK === k.U && io.WE && io.WCLK)
-		banks(k).io.WE := (io.WBANK === k.U && io.WE && io.WCLK)
+		banks(k).io.WCLKE := (io.WBANK === k.U && io.WE && io.WCLKE)
+		banks(k).io.WE := (io.WBANK === k.U && io.WE && io.WCLKE)
 		banks(k).io.MASK := 0x0000.U
 	}
 	when(io.RBANK === 0.U){ io.RDATA := banks(0).io.RDATA }

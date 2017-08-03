@@ -9,7 +9,7 @@ class Timer(val w: Int) extends Module {
 		val fire = Output(Bool())
 	})
 
-	val cnt = Counter.counter(io.period, Bool(true))
+	val cnt = Counter.counter(io.period, true.B)
 	io.fire := RegNext(cnt === io.period)
 }
 
@@ -18,7 +18,6 @@ class Wavetable extends Module {
 	val io = IO(new Bundle{
 		val RBANK = Output(UInt(2.W))
 		val RADDR = Output(UInt(8.W))
-		val RCLK = Output(Bool())
 		val En = Input(Bool())
 		val freq = Input(UInt(13.W))
 		val step = Input(UInt(3.W))
@@ -34,7 +33,5 @@ class Wavetable extends Module {
 
 		io.RADDR := sampleCounter.io.tot(7, 0)
 		io.RBANK := sampleCounter.io.tot(9, 8)
-
-		io.RCLK := RegNext(periodTimer.io.fire)
 	}
 }
