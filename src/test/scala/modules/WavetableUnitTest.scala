@@ -7,7 +7,7 @@ import scala.util.Random
 
 class WavetableUnitTester(c: Wavetable) extends PeekPokeTester(c) {
 
-  poke(c.io.En, 1)
+  poke(c.io.Disable, 0)
 
   for (i <- 0 until 10) {
   	val stp = rnd.nextInt((1 << 3) - 1)

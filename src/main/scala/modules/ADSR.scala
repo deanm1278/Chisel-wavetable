@@ -15,6 +15,7 @@ class ADSR(val w: Int) extends Module {
 		val OUTVAL = Output(UInt(7.W))
 		val RUNNING = Output(Bool())
 	})
+	val out = RegInit(0.U(7.W))
 
 	val STARTr = Module(new EdgeBuffer)
   	STARTr.io.in := io.START
@@ -26,31 +27,33 @@ class ADSR(val w: Int) extends Module {
 	var stateTmr = Module(new Timer(w))
 
 	when(STARTr.io.rising){
-		io.OUTVAL := 0.U
+		out := 0.U
 		state := sAttack
 	}
-	when(STARTr.io.falling){ 
-		state := sDecay 
+	when(STARTr.io.falling && (state != sIdle) && io.SUS_LVL != 0.U){ 
+		state := sRelease 
 	}
 	when(state === sAttack){
 		stateTmr.io.period := io.A_INTERVAL
-		when( stateTmr.io.fire ){ io.OUTVAL := io.OUTVAL + 1.U }
-		when( io.OUTVAL === 127.U ){ state === sDecay }
+		when( out === 127.U ){ state := sDecay }
+		when( stateTmr.io.fire ){ out := out + 1.U }
 	}
 	when(state === sDecay){
 		stateTmr.io.period := io.D_INTERVAL
-		when( stateTmr.io.fire ){ io.OUTVAL := io.OUTVAL - 1.U }
 
 		//when sustain level is 0, exit here
-		when( io.OUTVAL === 0.U ){ state === sIdle }
-		.elsewhen( io.OUTVAL === io.SUS_LVL ){ state === sSustain }
+		when( out === 0.U ){ state := sIdle }
+		when( out === io.SUS_LVL ){ state := sSustain }
+
+		when( stateTmr.io.fire ){ out := out - 1.U }
 	}
 	when(state === sSustain){
-		io.OUTVAL := io.SUS_LVL
+		out := io.SUS_LVL
 	}
 	when(state === sRelease){
 		stateTmr.io.period := io.R_INTERVAL
-		when( stateTmr.io.fire ){ io.OUTVAL := io.OUTVAL - 1.U }
-		when( io.OUTVAL === 0.U ){ state := sIdle }
+		when( out === 0.U ){ state := sIdle }
+		when( stateTmr.io.fire ){ out := out - 1.U }
 	}
+	io.OUTVAL := out
 }

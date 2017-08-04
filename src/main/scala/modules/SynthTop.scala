@@ -1,6 +1,7 @@
 package modules
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental._ // To enable experimental features
 
 //we need to declare the PLL as a black box since it's got a device-specific implementation
@@ -87,10 +88,18 @@ class Hello extends Module {
 		val waveDecode = Module(new SPIDecodeWave(1028, 4))
 		waveDecode.io.trigger := spiWave.io.DATA_READY
 
+		//create the envelope generator w/ a 22 bit timer
+		val adsr = Module(new ADSR(22))
+		adsr.io.A_INTERVAL := Cat(regs(10).dout(5,0), regs(11).dout)
+		adsr.io.D_INTERVAL := Cat(regs(12).dout(5,0), regs(13).dout)
+		adsr.io.R_INTERVAL := Cat(regs(14).dout(5,0), regs(15).dout)
+		adsr.io.SUS_LVL := regs(16).dout
+		adsr.io.START := regs(9).dout(8) //Key pressed
+
 		//make wavetables
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
 		for (k <- 0 until 3) {
-			wavetables(k).io.En := regs(9).dout(8) //Key pressed
+			wavetables(k).io.Disable := !adsr.io.RUNNING
 			wavetables(k).io.freq := regs(k).dout(15, 3)
 			wavetables(k).io.step := regs(k).dout(2, 0)
 		}
@@ -117,13 +126,26 @@ class Hello extends Module {
 		io.OSC1 := vols(1).io.OUT
 		io.OSC2 := vols(2).io.OUT
 
+		//create envelope mixers
+		val mixCutoff = Module(new Mixer(12))
+		mixCutoff.io.ENV := adsr.io.OUTVAL
+		mixCutoff.io.MUL := regs(17).dout(4,0)
+		mixCutoff.io.PRE := regs(3).dout
+
+		val mixVolume = Module(new Mixer(12))
+		mixVolume.io.ENV := adsr.io.OUTVAL
+		mixVolume.io.MUL := regs(18).dout(4,0)
+		mixVolume.io.PRE := regs(5).dout
+
 		//create the PWMs
 		val pwms = Range(0, 5).map(_ => Module(new PWM(12)))
 		for (k <- 0 until 5) {
 			pwms(k).io.per := 4095.U
 			pwms(k).io.en := 1.U
-			pwms(k).io.dc := regs(k + 3).dout
 			io.PWM_OUT(k) := pwms(k).io.out
+			if(k == 0){ pwms(k).io.dc := mixCutoff.io.POST }
+			else if(k == 2){ pwms(k).io.dc := mixVolume.io.POST }
+			else { pwms(k).io.dc := regs(k + 3).dout }
 		}
 	}
 }

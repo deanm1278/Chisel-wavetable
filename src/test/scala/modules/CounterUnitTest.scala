@@ -20,12 +20,14 @@ class CounterUnitTester(c: Counter) extends PeekPokeTester(c) {
     step(1)
   }
 
-  for (i <- 0 until 10) {
+  for (i <- 0 until 100) {
     val inc = rnd.nextBoolean()
     val amt = rnd.nextInt(maxInt)
     poke(c.io.inc, if (inc) 1 else 0)
     poke(c.io.amt, amt)
     step(1)
+    if(inc && curCnt + amt > 255) { expect(c.io.ovf, true) }
+    else { expect(c.io.ovf, false) }
     curCnt = if(inc) intWrapAround(curCnt + amt, 255) else curCnt
     expect(c.io.tot, curCnt)
   }

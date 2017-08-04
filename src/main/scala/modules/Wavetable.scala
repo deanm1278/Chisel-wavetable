@@ -18,12 +18,13 @@ class Wavetable extends Module {
 	val io = IO(new Bundle{
 		val RBANK = Output(UInt(2.W))
 		val RADDR = Output(UInt(8.W))
-		val En = Input(Bool())
+		val Disable = Input(Bool())
 		val freq = Input(UInt(13.W))
 		val step = Input(UInt(3.W))
+		val OVF = Output(Bool())
 	})
 
-	withReset(!io.En){
+	withReset(io.Disable){
 		var periodTimer = Module(new Timer(16))
 		periodTimer.io.period := io.freq
 
@@ -33,5 +34,6 @@ class Wavetable extends Module {
 
 		io.RADDR := sampleCounter.io.tot(7, 0)
 		io.RBANK := sampleCounter.io.tot(9, 8)
+		//io.OVF := sampleCounter.io.ovf
 	}
 }
