@@ -10,9 +10,8 @@ class Volume extends Module {
 		val MUL = Input(UInt(3.W))
 	})
 
-	//val scaled = io.IN(14, 0) >> io.MUL
+	val scaled = io.IN(14, 0) >> io.MUL
 
-	//TODO: lets actually just make this multiply. We have blocks to spare
-	when( io.IN(15) ){ io.OUT := 0x8000.U - io.IN(14, 0) }
-	.otherwise { io.OUT := 0x8000.U + io.IN(14, 0) }
+	when( io.IN(15) ){ io.OUT := 0x8000.U - scaled }
+	.otherwise { io.OUT := 0x8000.U + scaled }
 }
