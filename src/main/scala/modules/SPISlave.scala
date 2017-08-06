@@ -45,21 +45,11 @@ object Counter {
 class Counter(val w: Int) extends Module {
   val io = IO(new Bundle {
     val inc = Input(Bool())
-    //val tot = Output(UInt( (w.U.getWidth + 1 ).W ))
-    //val amt = Input(UInt( (w.U.getWidth + 1 ).W ))
     val tot = Output(w.U)
     val amt = Input(w.U)
-    val ovf = Output(Bool())
   })
 
-  val ovf = RegInit(0.U(1.W))
-  when(io.inc && (io.tot + io.amt) > w.U ){
-    ovf := true.B
-  }
-  .otherwise{ ovf := false.B }
-
   io.tot := Counter.counter(w.U, io.inc, io.amt)
-  io.ovf := ovf
 }
 
 class SPISlave(val w: Int, val outWidth: Int = 16) extends Module {

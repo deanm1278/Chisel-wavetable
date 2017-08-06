@@ -99,9 +99,9 @@ class Hello extends Module {
 		//make wavetables
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
 		for (k <- 0 until 3) {
-			wavetables(k).io.Disable := !adsr.io.RUNNING
 			wavetables(k).io.freq := regs(k).dout(15, 3)
 			wavetables(k).io.step := regs(k).dout(2, 0)
+			wavetables(k).io.Disable := ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING)
 		}
 
 		val brams = Range(0, 3).map(_ => Module(new RamArb()))

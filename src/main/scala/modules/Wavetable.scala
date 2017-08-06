@@ -13,7 +13,47 @@ class Timer(val w: Int) extends Module {
 	io.fire := RegNext(cnt === io.period)
 }
 
-//TODO: this should stop at the end of the waveform
+object ChangeDetect {
+  def changeDetect(comp: UInt, value: UInt): UInt = {
+    val x = RegNext(value)
+    val changed = RegInit(false.B)
+
+    when(x === comp && value != comp){ changed := true.B }
+    .otherwise{ changed := false.B }
+
+    changed
+  }
+}
+
+class ChangeDetect(val w: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Input(w.U)
+    val comp = Input(w.U)
+    val changed = Output(Bool())
+  })
+
+  io.changed := ChangeDetect.changeDetect(io.comp, io.in)
+}
+
+object ResetLatch {
+	def resetLatch(stopTrigger: Bool, stopHold: Bool): Bool = {
+		val x = RegInit(true.B)
+		when(stopHold){ x := false.B }
+		.elsewhen( (stopTrigger && !stopHold) ){ x := true.B }
+		x
+	}
+}
+
+class ResetLatch extends Module {
+  val io = IO(new Bundle {
+    val trigger = Input(Bool())
+    val hold = Input(Bool())
+    val out = Output(Bool())
+  })
+
+  io.out := ResetLatch.resetLatch(io.trigger, io.hold)
+}
+
 class Wavetable extends Module {
 	val io = IO(new Bundle{
 		val RBANK = Output(UInt(2.W))
@@ -24,7 +64,7 @@ class Wavetable extends Module {
 		val OVF = Output(Bool())
 	})
 
-	withReset(io.Disable){
+	withReset(io.Disable || (io.freq === 0.U)){
 		var periodTimer = Module(new Timer(16))
 		periodTimer.io.period := io.freq
 
@@ -34,6 +74,7 @@ class Wavetable extends Module {
 
 		io.RADDR := sampleCounter.io.tot(7, 0)
 		io.RBANK := sampleCounter.io.tot(9, 8)
-		//io.OVF := sampleCounter.io.ovf
+
+		io.OVF := ChangeDetect.changeDetect(3.U, io.RBANK)
 	}
 }

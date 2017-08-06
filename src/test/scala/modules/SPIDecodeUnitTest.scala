@@ -20,8 +20,9 @@ class SPIDecodeTest(c: SPIDecode) extends PeekPokeTester(c) {
 
     expect(c.io.wclk, if ( wen > 0 && trig ) 1 else 0)
     if(trig){
-      expect(c.io.dataOut, UInt(dataIn)(15, 0))
-      expect(c.io.addr, UInt(dataIn)(26, 22))
+      val in = dataIn.U
+      expect(c.io.dataOut, in(15, 0))
+      expect(c.io.addr, in(26, 22))
     }
   }
 }
