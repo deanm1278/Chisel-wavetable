@@ -9,7 +9,7 @@ class Timer(val w: Int) extends Module {
 		val fire = Output(Bool())
 	})
 
-	val cnt = Counter.counter(io.period, true.B)
+	val cnt = Counter.counter(io.period, true.B, 1.U)
 	io.fire := RegNext(cnt === io.period)
 }
 

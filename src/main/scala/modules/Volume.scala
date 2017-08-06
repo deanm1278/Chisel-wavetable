@@ -2,7 +2,6 @@ package modules
 
 import chisel3._
 
-//TODO: this should stop at the end of the waveform
 class Volume extends Module {
 	val io = IO(new Bundle{
 		val IN = Input(UInt(16.W))
