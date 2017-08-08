@@ -37,6 +37,7 @@ class DReg extends Module {
 class Hello extends Module {
 	val io = IO(new Bundle {
 		val PWM_OUT = Output(Vec(5, Bool()))
+		val SUB_OUT = Output(Vec(3, Bool()))
 
 		val MOSI = Input(Bool())
 		val MISO = Output(Bool())
@@ -98,10 +99,15 @@ class Hello extends Module {
 
 		//make wavetables
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
+		val suboscs = Range(0, 3).map(_ => Module(new BlackBoxSubosc()))
 		for (k <- 0 until 3) {
 			wavetables(k).io.freq := regs(k).dout(15, 3)
 			wavetables(k).io.step := regs(k).dout(2, 0)
 			wavetables(k).io.Disable := ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING)
+			suboscs(k).io.en := !ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING) && regs(9).dout(k)
+			suboscs(k).io.flip := wavetables(k).io.OVF
+			suboscs(k).io.clock := pll.io.PLLOUTCORE
+			io.SUB_OUT(k) := suboscs(k).io.out
 		}
 
 		val brams = Range(0, 3).map(_ => Module(new RamArb()))

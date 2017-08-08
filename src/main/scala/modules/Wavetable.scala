@@ -2,6 +2,7 @@ package modules
 
 import chisel3._
 import chisel3.experimental._ // To enable experimental features
+import chisel3.util._
 
 class Timer(val w: Int) extends Module {
 	val io = IO(new Bundle{
@@ -52,6 +53,30 @@ class ResetLatch extends Module {
   })
 
   io.out := ResetLatch.resetLatch(io.trigger, io.hold)
+}
+
+class BlackBoxSubosc extends BlackBox with HasBlackBoxInline  {
+  val io = IO(new Bundle() {
+    val en = Input(Bool())
+    val flip = Input(Bool())
+    val clock = Input(Clock())
+    val out = Output(Bool())
+  })
+  setInline("Subosc.v",
+    s"""
+      |module BlackBoxSubosc(
+      |    input  en,
+      |    input  flip,
+      |    input clock,
+      |    output out
+      |);
+      |  reg oscVal = 1'b0;
+      |  always @(posedge clock) begin
+      |    if(flip) oscVal <= ~oscVal;
+      |  end
+      |  assign out = (en ? oscVal : 1'bZ);
+      |endmodule
+    """.stripMargin)
 }
 
 class Wavetable extends Module {
