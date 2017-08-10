@@ -98,11 +98,22 @@ class Hello extends Module {
 		adsr.io.START := regs(9).dout(8) //Key pressed
 
 		//make wavetables
+		var portTimer = Module(new Timer(16))
+		portTimer.io.period := regs(19).dout
+		val KEYPRESSr = Module(new EdgeBuffer)
+  		KEYPRESSr.io.in := regs(9).dout(8) //Key pressed
+
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
+		val ports = Range(0, 3).map(_ => Module(new Port()))
 		val suboscs = Range(0, 3).map(_ => Module(new BlackBoxSubosc()))
 		for (k <- 0 until 3) {
-			wavetables(k).io.freq := regs(k).dout(15, 3)
-			wavetables(k).io.step := regs(k).dout(2, 0)
+			ports(k).io.SET := KEYPRESSr.io.rising
+			ports(k).io.fire := portTimer.io.fire
+			ports(k).io.target_freq := regs(k).dout(15, 3)
+			wavetables(k).io.freq := ports(k).io.freq
+
+			ports(k).io.target_step := regs(k).dout(2, 0)
+			wavetables(k).io.step := ports(k).io.step
 			wavetables(k).io.Disable := ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING)
 			suboscs(k).io.en := !ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING) && regs(9).dout(k)
 			suboscs(k).io.flip := wavetables(k).io.OVF
