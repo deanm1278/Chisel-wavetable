@@ -24,7 +24,7 @@ set_io io_SUB_OUT_1 130
 set_io io_SUB_OUT_2 134
 
 # Noise
-##set_io NOISE_OUT 135
+set_io io_NOISE_OUT 135
 
 # PWM
 set_io io_PWM_OUT_0 12

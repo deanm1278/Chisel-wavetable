@@ -38,6 +38,7 @@ class Hello extends Module {
 	val io = IO(new Bundle {
 		val PWM_OUT = Output(Vec(5, Bool()))
 		val SUB_OUT = Output(Vec(3, Bool()))
+		val NOISE_OUT = Output(Bool())
 
 		val MOSI = Input(Bool())
 		val MISO = Output(Bool())
@@ -104,21 +105,24 @@ class Hello extends Module {
   		KEYPRESSr.io.in := regs(9).dout(8) //Key pressed
 
 		val wavetables = Range(0, 3).map(_ => Module(new Wavetable()))
-		val ports = Range(0, 3).map(_ => Module(new Port()))
-		val suboscs = Range(0, 3).map(_ => Module(new BlackBoxSubosc()))
+		val ports = Range(0, 3).map(_ =>Module(new LimitedMatcher(0x7CB, 0x3E7, 3, 13)))
+		val suboscs = Range(0, 3).map(_ => Module(new FlipFlop()))
+		val subOuts = Range(0, 3).map(_ => Module(new TriStateEnable()))
 		for (k <- 0 until 3) {
-			ports(k).io.SET := KEYPRESSr.io.rising
-			ports(k).io.fire := portTimer.io.fire
-			ports(k).io.target_freq := regs(k).dout(15, 3)
-			wavetables(k).io.freq := ports(k).io.freq
+			ports(k).io.SET := (KEYPRESSr.io.rising || regs(19).dout === 0.U)
+			ports(k).io.EN := portTimer.io.fire
+			ports(k).io.minor_target := regs(k).dout(15, 3)
+			wavetables(k).io.freq := ports(k).io.minor_output
 
-			ports(k).io.target_step := regs(k).dout(2, 0)
-			wavetables(k).io.step := ports(k).io.step
+			ports(k).io.major_target := regs(k).dout(2, 0)
+			wavetables(k).io.step := ports(k).io.major_output
 			wavetables(k).io.Disable := ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING)
-			suboscs(k).io.en := !ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING) && regs(9).dout(k)
+
 			suboscs(k).io.flip := wavetables(k).io.OVF
-			suboscs(k).io.clock := pll.io.PLLOUTCORE
-			io.SUB_OUT(k) := suboscs(k).io.out
+			subOuts(k).io.clock := pll.io.PLLOUTCORE
+			subOuts(k).io.in := suboscs(k).io.out
+			subOuts(k).io.en := !ResetLatch.resetLatch(wavetables(k).io.OVF, adsr.io.RUNNING) && regs(9).dout(k)
+			io.SUB_OUT(k) := subOuts(k).io.out
 		}
 
 		val brams = Range(0, 3).map(_ => Module(new RamArb()))
@@ -164,6 +168,17 @@ class Hello extends Module {
 			else if(k == 2){ pwms(k).io.dc := mixVolume.io.POST }
 			else { pwms(k).io.dc := regs(k + 3).dout }
 		}
+
+/*
+		//noise generator
+		val noise = Module(new Noise(16))
+		val noiseOut = Module(new TriStateEnable())
+		noise.io.period := 20000.U - (mixCutoff.io.POST << 2)
+		noiseOut.io.en := (adsr.io.RUNNING && regs(9).dout(3))
+		noiseOut.io.in := noise.io.out
+		noiseOut.io.clock := pll.io.PLLOUTCORE
+		io.NOISE_OUT := noiseOut.io.out
+		*/
 	}
 }
 

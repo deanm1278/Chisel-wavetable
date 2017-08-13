@@ -42,7 +42,7 @@ class ADSR(val w: Int) extends Module {
 		stateTmr.io.period := io.D_INTERVAL
 
 		//when sustain level is 0, exit here
-		when( out === 0.U ){ state := sIdle }
+		when( out === 1.U ){ state := sIdle }
 		when( out === io.SUS_LVL ){ state := sSustain }
 
 		when( stateTmr.io.fire ){ out := out - 1.U }

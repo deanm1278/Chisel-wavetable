@@ -55,26 +55,39 @@ class ResetLatch extends Module {
   io.out := ResetLatch.resetLatch(io.trigger, io.hold)
 }
 
-class BlackBoxSubosc extends BlackBox with HasBlackBoxInline  {
-  val io = IO(new Bundle() {
-    val en = Input(Bool())
+class FlipFlop extends Module {
+  val io = IO(new Bundle{
     val flip = Input(Bool())
-    val clock = Input(Clock())
     val out = Output(Bool())
   })
-  setInline("Subosc.v",
+
+  val outVal = RegInit(0.U)
+
+  when(io.flip){
+    outVal := ~outVal
+  }
+
+  io.out := outVal
+}
+
+class TriStateEnable extends BlackBox with HasBlackBoxInline{
+  val io = IO(new Bundle() {
+    val in = Input(Bool())
+    val en = Input(Bool())
+    val out = Output(Bool())
+    val clock = Input(Clock())
+  })
+  setInline("TriStateEnable.v",
     s"""
-      |module BlackBoxSubosc(
+      |module TriStateEnable(
+      |    input in,
       |    input  en,
-      |    input  flip,
-      |    input clock,
-      |    output out
+      |    output out,
+      |    input clock
       |);
-      |  reg oscVal = 1'b0;
-      |  always @(posedge clock) begin
-      |    if(flip) oscVal <= ~oscVal;
-      |  end
-      |  assign out = (en ? oscVal : 1'bZ);
+      |  reg outVal = 1'b0;
+      |  always @(posedge clock) outVal <= in;
+      |  assign out = (en ? outVal : 1'bZ);
       |endmodule
     """.stripMargin)
 }
